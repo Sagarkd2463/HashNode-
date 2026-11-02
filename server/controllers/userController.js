@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-
 import User from "../models/User.js";
 import Post from "../models/Post.js";
 
@@ -13,7 +12,7 @@ const publicUser = (user) => ({
   createdAt: user.createdAt,
 });
 
-// View public profile and published posts
+// Get public profile
 export const getPublicProfile = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -39,10 +38,7 @@ export const getPublicProfile = async (req, res, next) => {
       status: "published",
     })
       .populate("tags", "name slug")
-      .sort({
-        publishedAt: -1,
-        createdAt: -1,
-      });
+      .sort({ publishedAt: -1, createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -52,7 +48,6 @@ export const getPublicProfile = async (req, res, next) => {
         count: posts.length,
       },
     });
-
   } catch (error) {
     next(error);
   }
@@ -112,10 +107,7 @@ export const updateMyProfile = async (req, res, next) => {
 
     // Validate bio
     if (bio !== undefined) {
-      if (
-        typeof bio !== "string" ||
-        bio.trim().length > 200
-      ) {
+      if (typeof bio !== "string" || bio.trim().length > 200) {
         return res.status(400).json({
           success: false,
           message: "Bio must be 200 characters or fewer.",
@@ -129,21 +121,18 @@ export const updateMyProfile = async (req, res, next) => {
     if (avatarUrl !== undefined) {
       if (
         typeof avatarUrl !== "string" ||
-        (
-          avatarUrl.trim() &&
-          !/^https?:\/\/\S+$/i.test(avatarUrl.trim())
-        )
+        (avatarUrl.trim() && !/^https?:\/\/\S+$/i.test(avatarUrl.trim()))
       ) {
         return res.status(400).json({
           success: false,
-          message: "Please provide a valid HTTP or HTTPS avatar URL.",
+          message: "Please provide a valid avatar URL.",
         });
       }
 
       updates.avatarUrl = avatarUrl.trim();
     }
 
-    // Check whether any field was provided
+    // Check empty updates
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
         success: false,
@@ -151,12 +140,10 @@ export const updateMyProfile = async (req, res, next) => {
       });
     }
 
-    // Update profile
+    // Update user
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      {
-        $set: updates,
-      },
+      { $set: updates },
       {
         new: true,
         runValidators: true,
@@ -177,7 +164,6 @@ export const updateMyProfile = async (req, res, next) => {
         user: publicUser(user),
       },
     });
-
   } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({
